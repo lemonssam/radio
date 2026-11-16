@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2학년 2반 고민 상담소</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nightBg: '#121622',
+            nightCard: '#1C2233',
+            nightBorder: '#2E3750',
+            creamBg: '#F9F6F0',
+            creamCard: '#FFFFFF',
+            creamBorder: '#E5DEC9',
+            accentYellow: '#FFD166',
+            accentMint: '#6EE7B7',
+          },
+          fontFamily: {
+            sans: ['"Noto Sans KR"', 'sans-serif'],
+            serif: ['"Gowun Dodum"', 'serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* 커스텀 스크롤바 최소화 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.35);
+      border-radius: 999px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+
+    /* 실물화상기 비디오 미러링/고대비 보정 */
+    .doc-cam-video {
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body id="app-body" class="min-h-screen flex flex-col font-sans bg-nightBg text-white transition-colors duration-300 select-none">
+
+  <!-- 알림 토스트 -->
+  <div id="toast-box" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"></div>
+
+  <!-- =========================================================
+       상단 초단순 헤더: 타이틀 + 핵심 아이콘 컨트롤만 배치
+  ========================================================== -->
+  <header id="top-header" class="w-full px-6 py-4 border-b border-nightBorder flex flex-wrap items-center justify-between gap-4">
+    <!-- 좌측: 심플 타이틀 -->
+    <div class="flex items-center gap-3">
+      <span class="w-3.5 h-3.5 rounded-full bg-accentYellow inline-block"></span>
+      <h1 class="text-2xl sm:text-3xl font-black tracking-tight">2학년 2반 고민 상담소</h1>
+    </div>
+
+    <!-- 우측: 필수 컨트롤 버튼 (글자 최소화) -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- 화면 모드 전환: 글 사연 vs 실물화상기 카메라 -->
+      <button id="mode-switch-btn" type="button"
+        class="px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold bg-nightCard hover:opacity-90 border border-nightBorder transition active:scale-95 flex items-center gap-2">
+        <span id="mode-icon">📷</span>
+        <span id="mode-text">실물화상기</span>
+      </button>
+
+      <!-- 글자 크기 조절 (크게 / 아주 크게) -->
+      <button id="font-size-btn" type="button"
+        class="px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold bg-nightCard hover:opacity-90 border border-nightBorder transition active:scale-95">
+        가+
+      </button>
+
+      <!-- 배경 테마 전환 (어두운 밤하늘 / 밝은 칠판크림) -->
+      <button id="theme-btn" type="button"
+        class="px-3.5 py-2.5 rounded-2xl text-sm sm:text-base font-bold bg-nightCard hover:opacity-90 border border-nightBorder transition active:scale-95"
+        title="배경색 변경">
+        ☀️
+      </button>
+
+      <!-- 잔잔한 BGM 토글 -->
+      <button id="bgm-btn" type="button"
+        class="px-3.5 py-2.5 rounded-2xl text-sm sm:text-base font-bold bg-nightCard hover:opacity-90 border border-nightBorder transition active:scale-95"
+        title="배경음악">
+        🔇
+      </button>
+
+      <!-- + 새 고민 추가 버튼 -->
+      <button id="open-add-btn" type="button"
+        class="px-4 py-2.5 rounded-2xl text-sm sm:text-base font-black bg-accentYellow text-slate-900 hover:brightness-105 transition active:scale-95 shadow-md">
+        + 고민 쓰기
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================
+       메인 스크린 영역: 넉넉한 여백 + 대형 가독성 화면
+  ========================================================== -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-5 sm:px-8 py-6 flex flex-col justify-between gap-6">
+
+    <!-- [뷰 1] 사연 띄우기 (발표/낭독 전용 대형 카드) -->
+    <section id="story-view" class="flex-1 flex flex-col justify-center">
+      <div id="story-card" class="w-full rounded-3xl p-8 sm:p-12 bg-nightCard border-2 border-nightBorder shadow-2xl flex flex-col justify-between min-h-[360px] sm:min-h-[430px] transition-colors">
+
+        <!-- 상단: 사연 번호 & 익명 이름 -->
+        <div class="flex items-center justify-between gap-4 pb-5 border-b border-nightBorder/70">
+          <div class="flex items-center gap-3">
+            <span id="story-badge" class="px-4 py-1.5 rounded-full text-base sm:text-lg font-black bg-accentYellow/20 text-accentYellow">
+              #1
+            </span>
+            <span id="story-nickname" class="text-xl sm:text-2xl font-bold opacity-90">
+              창가 자리 고양이
+            </span>
+          </div>
+          <span id="story-counter" class="text-base sm:text-lg font-bold opacity-60">
+            1 / 3
+          </span>
+        </div>
+
+        <!-- 중앙: 고민 본문 (아주 크고 선명한 글씨) -->
+        <div class="my-auto py-8">
+          <p id="story-content" class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-snug sm:leading-relaxed tracking-tight break-keep whitespace-pre-line">
+            시험 성적이 생각만큼 안 나와서 너무 속상해요.
+          </p>
+        </div>
+
+        <!-- 하단: 이전/다음 사연 버튼 + 조언 듣는 창 열기 버튼 -->
+        <div class="pt-5 border-t border-nightBorder/70 flex flex-wrap items-center justify-between gap-4">
+          <!-- 이전 / 다음 넘기기 -->
+          <div class="flex items-center gap-3">
+            <button id="prev-story-btn" type="button"
+              class="w-14 h-14 rounded-2xl bg-white/10 hover:bg-white/20 text-2xl font-black flex items-center justify-center transition active:scale-95">
+              ◀
+            </button>
+            <button id="next-story-btn" type="button"
+              class="w-14 h-14 rounded-2xl bg-white/10 hover:bg-white/20 text-2xl font-black flex items-center justify-center transition active:scale-95">
+              ▶
+            </button>
+          </div>
+
+          <!-- 조언 듣는 창 버튼 -->
+          <button id="open-advice-btn" type="button"
+            class="px-7 py-4 rounded-2xl bg-accentMint text-slate-950 text-lg sm:text-xl font-black hover:brightness-105 transition active:scale-95 shadow-lg flex items-center gap-3">
+            <span>💬 조언 듣는 창</span>
+            <span id="advice-badge-count" class="px-2.5 py-0.5 rounded-full bg-slate-950/15 text-base font-black">0</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- [뷰 2] 실물화상기 카메라 뷰 (교사가 종이 쪽지를 카메라로 바로 비출 때 사용) -->
+    <section id="camera-view" class="hidden flex-1 flex-col justify-center">
+      <div class="w-full rounded-3xl overflow-hidden bg-black border-2 border-nightBorder shadow-2xl relative flex flex-col items-center justify-center min-h-[420px] sm:min-h-[500px]">
+        <video id="doc-cam-stream" autoplay playsinline class="w-full h-[55vh] sm:h-[62vh] doc-cam-video"></video>
+
+        <!-- 카메라 미연결 시 심플 안내 -->
+        <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center bg-nightCard">
+          <span class="text-5xl">📷</span>
+          <p class="text-xl sm:text-2xl font-bold">실물화상기(카메라) 연결 대기 중</p>
+          <button id="retry-cam-btn" type="button"
+            class="px-6 py-3 rounded-2xl bg-accentYellow text-slate-900 text-base font-black hover:brightness-105 active:scale-95">
+            카메라 켜기
+          </button>
+        </div>
+
+        <!-- 카메라 하단 심플 바: 화면 회전 + 조언 듣는 창 바로가기 -->
+        <div class="w-full px-6 py-3.5 bg-nightCard/95 border-t border-nightBorder flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <button id="rotate-cam-btn" type="button"
+              class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-sm sm:text-base font-bold transition active:scale-95">
+              🔄 화면 회전
+            </button>
+            <button id="switch-cam-device-btn" type="button"
+              class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-sm sm:text-base font-bold transition active:scale-95">
+              🎥 카메라 전환
+            </button>
+          </div>
+
+          <button id="cam-open-advice-btn" type="button"
+            class="px-6 py-3 rounded-2xl bg-accentMint text-slate-950 text-base sm:text-lg font-black hover:brightness-105 transition active:scale-95">
+            💬 조언 듣는 창
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       [조언 듣는 창] 대형 스크린 팝업 (우리 반 친구들 조언 + 상담소 한마디)
+  ========================================================== -->
+  <div id="advice-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm">
+    <div id="advice-modal-card" class="w-full max-w-5xl max-h-[90vh] rounded-3xl bg-nightCard border-2 border-nightBorder shadow-2xl flex flex-col overflow-hidden animate-fade">
+
+      <!-- 상단 바 -->
+      <div class="px-6 py-4 border-b border-nightBorder flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">💬</span>
+          <h2 class="text-xl sm:text-2xl font-black">조언 듣는 창</h2>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <!-- 버튼 한 번으로 따뜻한 상담소 한마디 띄우기 -->
+          <button id="random-cheer-btn" type="button"
+            class="px-4 py-2.5 rounded-2xl bg-accentYellow text-slate-900 text-sm sm:text-base font-black hover:brightness-105 transition active:scale-95">
+            ✨ 상담소 한마디
+          </button>
+          <button id="close-advice-btn" type="button"
+            class="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 text-xl font-black flex items-center justify-center transition active:scale-95">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 현재 고민 요약 한 줄 -->
+      <div class="px-6 py-3.5 bg-white/5 border-b border-nightBorder flex items-center gap-3">
+        <span class="px-3 py-1 rounded-lg bg-accentYellow/20 text-accentYellow text-sm font-black shrink-0">고민</span>
+        <p id="advice-target-text" class="text-base sm:text-lg font-bold truncate opacity-90">
+          시험 성적이 생각만큼 안 나와서 너무 속상해요.
+        </p>
+      </div>
+
+      <!-- 조언 카드 보드 (큰 글씨 말풍선 그리드) -->
+      <div id="advice-board" class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
+        <!-- 동적 렌더링 -->
+      </div>
+
+      <!-- 하단 초간단 조언 한 줄 입력 -->
+      <form id="advice-form" class="p-4 sm:p-5 border-t border-nightBorder bg-black/20 flex flex-col sm:flex-row gap-3">
+        <input id="advice-nick-input" type="text" maxlength="12" placeholder="이름 (생략 가능)"
+          class="sm:w-44 px-4 py-3.5 rounded-2xl bg-white/10 border border-nightBorder text-base font-bold placeholder:opacity-50 focus:outline-none focus:border-accentMint" />
+        <input id="advice-text-input" type="text" maxlength="120" required placeholder="친구에게 해줄 따뜻한 조언 한 줄..."
+          class="flex-1 px-4 py-3.5 rounded-2xl bg-white/10 border border-nightBorder text-base sm:text-lg font-bold placeholder:opacity-50 focus:outline-none focus:border-accentMint" />
+        <button type="submit"
+          class="px-6 py-3.5 rounded-2xl bg-accentMint text-slate-950 text-base sm:text-lg font-black hover:brightness-105 transition active:scale-95 shrink-0">
+          등록
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- =========================================================
+       [새 고민 쓰기] 초간단 모달 (+ 고민 쓰기 클릭 시)
+  ========================================================== -->
+  <div id="add-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div id="add-modal-card" class="w-full max-w-xl rounded-3xl bg-nightCard border-2 border-nightBorder shadow-2xl p-6 sm:p-8 animate-fade">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black">새 고민 띄우기</h2>
+        <button id="close-add-btn" type="button"
+          class="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 text-lg font-black flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <form id="add-worry-form" class="space-y-4">
+        <input id="new-nick-input" type="text" maxlength="14" placeholder="익명 닉네임 (예: 창가 자리)"
+          class="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-nightBorder text-lg font-bold placeholder:opacity-50 focus:outline-none focus:border-accentYellow" />
+
+        <textarea id="new-content-input" rows="4" maxlength="200" required placeholder="화면에 띄울 고민 내용을 입력하세요..."
+          class="w-full p-4 rounded-2xl bg-white/10 border border-nightBorder text-xl font-bold leading-relaxed placeholder:opacity-50 focus:outline-none focus:border-accentYellow resize-none"></textarea>
+
+        <button type="submit"
+          class="w-full py-4 rounded-2xl bg-accentYellow text-slate-950 text-xl font-black hover:brightness-105 transition active:scale-95">
+          화면에 바로 띄우기
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. 기본 데이터 (짧고 직관적인 예시 3개)
+    // =========================================================================
+    const STORAGE_KEY = 'class_2_2_projector_v2';
+
+    const DEFAULT_STORIES = [
+      {
+        id: 's1',
+        nickname: '수학 포기 직전',
+        content: '열심히 공부했는데 시험 점수가 안 올라서 너무 속상해요.',
+        advices: [
+          { nick: '2반 친구', text: '점수보다 네가 끝까지 포기 안 한 게 제일 멋져!' },
+          { nick: '짝꿍', text: '내일 쉬는 시간에 같이 문제 풀자, 넌 할 수 있어!' }
+        ]
+      },
+      {
+        id: 's2',
+        nickname: '창가 자리 고양이',
+        content: '친한 친구랑 사소한 일로 어색해졌는데 먼저 말 걸기가 어려워요.',
+        advices: [
+          { nick: '복도 구름', text: '내일 아침에 웃으면서 "안녕!" 한마디만 먼저 해보자!' }
+        ]
+      },
+      {
+        id: 's3',
+        nickname: '꿈 찾는 펭귄',
+        content: '아직 장래희망을 못 정해서 혼자 뒤처지는 기분이 들어요.',
+        advices: []
+      }
+    ];
+
+    const WARM_QUOTES = [
+      '오늘 하루도 버텨낸 너, 이미 충분히 잘하고 있어!',
+      '조금 느려도 괜찮아. 방향만 맞으면 결국 도착하니까.',
+      '혼자 고민하지 마. 우리 2학년 2반이 네 편이야!',
+      '실수해도 괜찮아, 열여덟 살은 원래 연습하는 나이니까.',
+      '네가 웃을 때 우리 반 분위기도 같이 환해져!'
+    ];
+
+    // =========================================================================
+    // 2. 상태 변수
+    // =========================================================================
+    let stories = [];
+    let currentIndex = 0;
+    let isLargeFont = false;
+    let isLightTheme = false;
+    let isCameraMode = false;
+    let camRotation = 0;
+    let videoDevices = [];
+    let currentDeviceIdx = 0;
+    let activeStream = null;
+
+    // =========================================================================
+    // 3. 저장소 로드/세이브
+    // =========================================================================
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        stories = raw ? JSON.parse(raw) : [...DEFAULT_STORIES];
+      } catch (e) {
+        stories = [...DEFAULT_STORIES];
+      }
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stories));
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      box.innerHTML = `
+        <div class="px-6 py-3 rounded-2xl bg-accentYellow text-slate-950 text-base sm:text-lg font-black shadow-xl animate-fade">
+          ${msg}
+        </div>
+      `;
+      setTimeout(() => { box.innerHTML = ''; }, 2200);
+    }
+
+    // =========================================================================
+    // 4. 사연 화면 렌더링
+    // =========================================================================
+    function renderStory() {
+      if (stories.length === 0) return;
+      if (currentIndex >= stories.length) currentIndex = 0;
+      if (currentIndex < 0) currentIndex = stories.length - 1;
+
+      const item = stories[currentIndex];
+      document.getElementById('story-badge').textContent = `#${currentIndex + 1}`;
+      document.getElementById('story-nickname').textContent = item.nickname;
+      document.getElementById('story-counter').textContent = `${currentIndex + 1} / ${stories.length}`;
+      document.getElementById('story-content').textContent = item.content;
+      document.getElementById('advice-badge-count').textContent = item.advices.length;
+    }
+
+    // =========================================================================
+    // 5. 조언 듣는 창 렌더링 & 등록
+    // =========================================================================
+    function openAdviceModal() {
+      const item = stories[currentIndex];
+      if (!item) return;
+
+      document.getElementById('advice-target-text').textContent = isCameraMode
+        ? '실물화상기로 비춘 친구의 고민'
+        : `"${item.content}"`;
+
+      renderAdviceBoard();
+      const modal = document.getElementById('advice-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAdviceModal() {
+      const modal = document.getElementById('advice-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function renderAdviceBoard() {
+      const item = stories[currentIndex];
+      const board = document.getElementById('advice-board');
+
+      if (!item.advices || item.advices.length === 0) {
+        board.innerHTML = `
+          <div class="col-span-full py-16 text-center opacity-60">
+            <p class="text-2xl sm:text-3xl font-black">아직 조언이 없어요</p>
+          </div>
+        `;
+        return;
+      }
+
+      board.innerHTML = item.advices.map((adv, idx) => `
+        <div class="p-6 rounded-3xl ${isLightTheme ? 'bg-amber-50 border-amber-200 text-slate-900' : 'bg-white/10 border-white/15 text-white'} border-2 shadow-md animate-fade flex flex-col justify-between gap-3">
+          <p class="font-serif text-xl sm:text-2xl font-bold leading-snug break-keep">
+            "${escapeHtml(adv.text)}"
+          </p>
+          <div class="flex items-center justify-between text-sm font-bold opacity-70 pt-2 border-t border-current/10">
+            <span>💌 ${escapeHtml(adv.nick)}</span>
+            <span>#${idx + 1}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    // =========================================================================
+    // 6. 실물화상기 (웹캠 / USB 문서카메라) 제어
+    // =========================================================================
+    async function startCamera(deviceId = null) {
+      const video = document.getElementById('doc-cam-stream');
+      const placeholder = document.getElementById('camera-placeholder');
+
+      if (activeStream) {
+        activeStream.getTracks().forEach(t => t.stop());
+      }
+
+      try {
+        const constraints = {
+          video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' },
+          audio: false
+        };
+        activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = activeStream;
+        placeholder.classList.add('hidden');
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        videoDevices = devices.filter(d => d.kind === 'videoinput');
+      } catch (err) {
+        placeholder.classList.remove('hidden');
+      }
+    }
+
+    function stopCamera() {
+      if (activeStream) {
+        activeStream.getTracks().forEach(t => t.stop());
+        activeStream = null;
+      }
+    }
+
+    // =========================================================================
+    // 7. 잔잔한 BGM (Web Audio)
+    // =========================================================================
+    let audioCtx = null;
+    let bgmTimer = null;
+    let isBgmOn = false;
+
+    function toggleBgm() {
+      const btn = document.getElementById('bgm-btn');
+      if (!isBgmOn) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const notes = [261.63, 329.63, 392.00, 523.25, 440.00, 392.00];
+        let i = 0;
+        const play = () => {
+          if (!isBgmOn) return;
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(notes[i % notes.length], now);
+          i++;
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.exponentialRampToValueAtTime(0.03, now + 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 1.7);
+        };
+        isBgmOn = true;
+        play();
+        bgmTimer = setInterval(play, 1500);
+        btn.textContent = '🎶';
+      } else {
+        isBgmOn = false;
+        clearInterval(bgmTimer);
+        btn.textContent = '🔇';
+      }
+    }
+
+    // =========================================================================
+    // 8. 테마 및 글자 크기 조절
+    // =========================================================================
+    function toggleTheme() {
+      isLightTheme = !isLightTheme;
+      const body = document.getElementById('app-body');
+      const header = document.getElementById('top-header');
+      const card = document.getElementById('story-card');
+      const adviceCard = document.getElementById('advice-modal-card');
+      const addCard = document.getElementById('add-modal-card');
+      const themeBtn = document.getElementById('theme-btn');
+
+      if (isLightTheme) {
+        body.className = 'min-h-screen flex flex-col font-sans bg-creamBg text-slate-900 transition-colors duration-300 select-none';
+        header.classList.replace('border-nightBorder', 'border-creamBorder');
+        card.className = 'w-full rounded-3xl p-8 sm:p-12 bg-creamCard border-2 border-creamBorder shadow-xl flex flex-col justify-between min-h-[360px] sm:min-h-[430px] transition-colors';
+        adviceCard.className = 'w-full max-w-5xl max-h-[90vh] rounded-3xl bg-creamCard text-slate-900 border-2 border-creamBorder shadow-2xl flex flex-col overflow-hidden animate-fade';
+        addCard.className = 'w-full max-w-xl rounded-3xl bg-creamCard text-slate-900 border-2 border-creamBorder shadow-2xl p-6 sm:p-8 animate-fade';
+        themeBtn.textContent = '🌙';
+      } else {
+        body.className = 'min-h-screen flex flex-col font-sans bg-nightBg text-white transition-colors duration-300 select-none';
+        header.classList.replace('border-creamBorder', 'border-nightBorder');
+        card.className = 'w-full rounded-3xl p-8 sm:p-12 bg-nightCard border-2 border-nightBorder shadow-2xl flex flex-col justify-between min-h-[360px] sm:min-h-[430px] transition-colors';
+        adviceCard.className = 'w-full max-w-5xl max-h-[90vh] rounded-3xl bg-nightCard text-white border-2 border-nightBorder shadow-2xl flex flex-col overflow-hidden animate-fade';
+        addCard.className = 'w-full max-w-xl rounded-3xl bg-nightCard text-white border-2 border-nightBorder shadow-2xl p-6 sm:p-8 animate-fade';
+        themeBtn.textContent = '☀️';
+      }
+      renderAdviceBoard();
+    }
+
+    function toggleFontSize() {
+      isLargeFont = !isLargeFont;
+      const content = document.getElementById('story-content');
+      const btn = document.getElementById('font-size-btn');
+      if (isLargeFont) {
+        content.className = 'font-serif text-4xl sm:text-5xl md:text-6xl font-bold leading-snug tracking-tight break-keep whitespace-pre-line';
+        btn.textContent = '가-';
+      } else {
+        content.className = 'font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-snug sm:leading-relaxed tracking-tight break-keep whitespace-pre-line';
+        btn.textContent = '가+';
+      }
+    }
+
+    // =========================================================================
+    // 9. 이벤트 초기화
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderStory();
+
+      // 사연 넘기기
+      document.getElementById('prev-story-btn').addEventListener('click', () => {
+        currentIndex--;
+        renderStory();
+      });
+      document.getElementById('next-story-btn').addEventListener('click', () => {
+        currentIndex++;
+        renderStory();
+      });
+
+      // 키보드 좌우 화살표 지원 (교실 리모컨/키보드)
+      document.addEventListener('keydown', (e) => {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowLeft') { currentIndex--; renderStory(); }
+        if (e.key === 'ArrowRight') { currentIndex++; renderStory(); }
+        if (e.key === 'Escape') { closeAdviceModal(); document.getElementById('add-modal').classList.add('hidden'); }
+      });
+
+      // 실물화상기 <-> 글 사연 모드 전환
+      document.getElementById('mode-switch-btn').addEventListener('click', () => {
+        isCameraMode = !isCameraMode;
+        const storyView = document.getElementById('story-view');
+        const camView = document.getElementById('camera-view');
+        const modeIcon = document.getElementById('mode-icon');
+        const modeText = document.getElementById('mode-text');
+
+        if (isCameraMode) {
+          storyView.classList.add('hidden');
+          camView.classList.remove('hidden');
+          camView.classList.add('flex');
+          modeIcon.textContent = '📝';
+          modeText.textContent = '사연 카드';
+          startCamera();
+        } else {
+          camView.classList.add('hidden');
+          camView.classList.remove('flex');
+          storyView.classList.remove('hidden');
+          modeIcon.textContent = '📷';
+          modeText.textContent = '실물화상기';
+          stopCamera();
+        }
+      });
+
+      // 카메라 컨트롤
+      document.getElementById('retry-cam-btn').addEventListener('click', () => startCamera());
+      document.getElementById('rotate-cam-btn').addEventListener('click', () => {
+        camRotation = (camRotation + 90) % 360;
+        document.getElementById('doc-cam-stream').style.transform = `rotate(${camRotation}deg)`;
+      });
+      document.getElementById('switch-cam-device-btn').addEventListener('click', () => {
+        if (videoDevices.length > 1) {
+          currentDeviceIdx = (currentDeviceIdx + 1) % videoDevices.length;
+          startCamera(videoDevices[currentDeviceIdx].deviceId);
+        } else {
+          showToast('연결된 다른 카메라가 없어요');
+        }
+      });
+
+      // 조언 듣는 창 열기/닫기
+      document.getElementById('open-advice-btn').addEventListener('click', openAdviceModal);
+      document.getElementById('cam-open-advice-btn').addEventListener('click', openAdviceModal);
+      document.getElementById('close-advice-btn').addEventListener('click', closeAdviceModal);
+
+      // 조언 한 줄 등록
+      document.getElementById('advice-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nick = document.getElementById('advice-nick-input').value.trim() || '2반 친구';
+        const text = document.getElementById('advice-text-input').value.trim();
+        if (!text) return;
+
+        stories[currentIndex].advices.push({ nick, text });
+        saveData();
+        renderAdviceBoard();
+        renderStory();
+        document.getElementById('advice-text-input').value = '';
+      });
+
+      // 상담소 한마디 (버튼 한 번으로 랜덤 위로 띄우기)
+      document.getElementById('random-cheer-btn').addEventListener('click', () => {
+        const quote = WARM_QUOTES[Math.floor(Math.random() * WARM_QUOTES.length)];
+        stories[currentIndex].advices.unshift({ nick: '상담소 한마디', text: quote });
+        saveData();
+        renderAdviceBoard();
+        renderStory();
+        showToast('따뜻한 한마디가 추가되었어요!');
+      });
+
+      // 새 고민 쓰기 모달
+      document.getElementById('open-add-btn').addEventListener('click', () => {
+        const m = document.getElementById('add-modal');
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      });
+      document.getElementById('close-add-btn').addEventListener('click', () => {
+        const m = document.getElementById('add-modal');
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      });
+      document.getElementById('add-worry-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nick = document.getElementById('new-nick-input').value.trim() || '익명 친구';
+        const content = document.getElementById('new-content-input').value.trim();
+        if (!content) return;
+
+        stories.push({
+          id: 's' + Date.now(),
+          nickname: nick,
+          content,
+          advices: []
+        });
+        currentIndex = stories.length - 1;
+        saveData();
+        renderStory();
+
+        document.getElementById('new-nick-input').value = '';
+        document.getElementById('new-content-input').value = '';
+        document.getElementById('add-modal').classList.add('hidden');
+        document.getElementById('add-modal').classList.remove('flex');
+
+        // 실물화상기 모드였다면 사연 카드 모드로 전환
+        if (isCameraMode) document.getElementById('mode-switch-btn').click();
+      });
+
+      // 글자 크기, 테마, BGM 버튼
+      document.getElementById('font-size-btn').addEventListener('click', toggleFontSize);
+      document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      document.getElementById('bgm-btn').addEventListener('click', toggleBgm);
+    });
+  </script>
+</body>
+</html>
